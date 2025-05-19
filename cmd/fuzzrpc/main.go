@@ -28,6 +28,7 @@ func main() {
 	reportHTML := flag.String("report-html", "", "path to write HTML report")
 	reportTmpl := flag.String("report-template", "templates/report.html", "HTML template path")
 	baselinePath := flag.String("baseline", "", "previous out.json to diff against")
+	webMode := flag.Bool("web", false, "use gRPC-Web text transport (HTTP/1.1)")
 	flag.Parse()
 
 	if *target == "" {
@@ -85,9 +86,10 @@ func main() {
 			}
 
 			// Phase 3: Execution & collect
-			execpkg.ExecuteFuzz(conn, svcName, mdesc, muts, func(f reportpkg.Finding) {
+			execpkg.ExecuteFuzz(conn, svcName, mdesc, muts, *webMode, func(f reportpkg.Finding) {
 				findings = append(findings, f)
 			})
+
 		}
 	}
 

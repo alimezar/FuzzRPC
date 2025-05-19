@@ -37,6 +37,7 @@ func ExecuteFuzz(
 	svcName string,
 	md *desc.MethodDescriptor,
 	msgs []*dynamic.Message,
+	webMode bool,
 	appendFinding func(report.Finding),
 ) {
 	stub := grpcdynamic.NewStub(conn)
@@ -52,9 +53,15 @@ func ExecuteFuzz(
 			payload = string(b)
 		}
 
-		// Invoke RPC with timeout
+		// Invoke RPC (native gRPC or gRPC-Web) with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		_, err = stub.InvokeRpc(ctx, md, msg)
+		if webMode {
+			// marshal proto → bytes and call gRPC-Web endpoint
+			pb, _ := msg.Marshal() // dynamic.Message → []byte
+			_, err = callWebUnary(ctx, "http://"+conn.Target(), fullMethod, pb)
+		} else {
+			_, err = stub.InvokeRpc(ctx, md, msg) // existing path
+		}
 		cancel()
 
 		var (
