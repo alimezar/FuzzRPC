@@ -12,7 +12,23 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+// Mapping Severity
+func classify(code codes.Code) report.Severity {
+	switch code {
+	case codes.Internal, codes.DataLoss:
+		return report.SevCritical
+	case codes.Unavailable, codes.DeadlineExceeded:
+		return report.SevHigh
+	case codes.InvalidArgument, codes.OutOfRange, codes.ResourceExhausted:
+		return report.SevLow
+	default:
+		return report.SevNone
+	}
+}
 
 // ExecuteFuzz invokes each mutated message against the given method,
 // prints results, and calls appendFinding for each invocation.
@@ -41,11 +57,17 @@ func ExecuteFuzz(
 		_, err = stub.InvokeRpc(ctx, md, msg)
 		cancel()
 
-		var errStr string
+		var (
+			errStr string
+			sev    report.Severity
+		)
+
 		if err != nil {
 			errStr = err.Error()
+			sev = classify(status.Code(err))
 			fmt.Printf("⚠️  %s → %v\n", fullMethod, err)
 		} else {
+			sev = report.SevNone
 			fmt.Printf("✅  %s → OK\n", fullMethod)
 		}
 
@@ -55,6 +77,8 @@ func ExecuteFuzz(
 			Method:    md.GetName(),
 			Payload:   payload,
 			Error:     errStr,
+			Severity:  sev, // overwritten Successfully
+			Baseline:  report.BaseNew,
 			Timestamp: time.Now(),
 		})
 	}
