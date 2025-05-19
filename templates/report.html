@@ -7,8 +7,14 @@
   <style>
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ccc; padding: 4px; }
-    .high { background: #fdd; }
-    .low { background: #dfd; }
+    .critical { background:#ffb3b3; }  /* red-ish */
+    .high      { background:#ffe0b3; }  /* orange-ish */
+    .low       { background:#e0ffb3; }  /* green-ish */
+    .none      { }                     /* plain */
+    /* baseline diff (left border) */
+    .new        { border-left: 6px solid #007fff; }   /* blue  = new */
+    .unchanged  { border-left: 6px solid #ccc;    }   /* grey  = carried over */
+    .resolved   { border-left: 6px solid #777;        text-decoration: line-through; }
   </style>
 </head>
 <body>
@@ -24,37 +30,40 @@
         <th>Time</th>
         <th>Service</th>
         <th>Method</th>
+        <th>Severity</th>
+        <th>Status</th>
         <th>Payload</th>
         <th>Error</th>
       </tr>
     </thead>
     <tbody>
-    {{- range . }}
-      <tr class="{{ if .Error }}high{{ else }}low{{ end }}">
-        <td>{{ .Timestamp }}</td>
-        <td>{{ .Service }}</td>
-        <td>{{ .Method }}</td>
-        <td><pre>{{ .Payload }}</pre></td>
-        <td>{{ .Error }}</td>
-      </tr>
-    {{- end }}
-    </tbody>
+{{- range . }}
+  <tr class="{{ .Severity }} {{ .Baseline }}">
+    <td>{{ .Timestamp }}</td>
+    <td>{{ .Service }}</td>
+    <td>{{ .Method }}</td>
+    <td>{{ .Severity }}</td>
+    <td>{{ .Baseline }}</td>
+    <td><pre>{{ .Payload }}</pre></td>
+    <td>{{ .Error }}</td>
+  </tr>
+{{- end }}
+</tbody>
   </table>
 
   <script>
     // Injected JSON of findings via the toJSON template function
     const findings = {{ . | toJSON }};
-    const counts = {};
-    findings.forEach(f => {
-      counts[f.method] = (counts[f.method] || 0) + (f.error ? 1 : 0);
-    });
+    const counts = { critical:0, high:0, low:0, none:0 };
+    findings.forEach(f => counts[f.severity]++);
     new Chart(document.getElementById('errorChart'), {
-      type: 'bar',
-      data: {
-        labels: Object.keys(counts),
-        datasets: [{ label: 'Errors per Method', data: Object.values(counts) }]
-      }
+        type: 'bar',
+        data: {
+            labels: Object.keys(counts),
+            datasets: [{ label: 'Findings per severity', data: Object.values(counts) }]
+        }
     });
+
   </script>
 </body>
 </html>

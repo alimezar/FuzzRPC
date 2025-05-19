@@ -12,8 +12,10 @@ import (
 type Finding struct {
 	Service   string    `json:"service"`
 	Method    string    `json:"method"`
-	Payload   string    `json:"payload"`   // JSON of the mutated message
-	Error     string    `json:"error"`     // gRPC error text (empty if OK)
+	Payload   string    `json:"payload"` // JSON of the mutated message
+	Error     string    `json:"error"`   // gRPC error text (empty if OK)
+	Severity  Severity  `json:"severity"`
+	Baseline  Baseline  `json:"baseline"`
 	Timestamp time.Time `json:"timestamp"` // when the call was made
 }
 

@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -25,10 +27,21 @@ func main() {
 	reportJSON := flag.String("report-json", "", "path to write JSON report")
 	reportHTML := flag.String("report-html", "", "path to write HTML report")
 	reportTmpl := flag.String("report-template", "templates/report.html", "HTML template path")
+	baselinePath := flag.String("baseline", "", "previous out.json to diff against")
+	webMode := flag.Bool("web", false, "use gRPC-Web text transport (HTTP/1.1)")
 	flag.Parse()
 
 	if *target == "" {
 		log.Fatal("❌ --target is required")
+	}
+
+	var baseline []reportpkg.Finding
+	if *baselinePath != "" {
+		if data, err := os.ReadFile(*baselinePath); err == nil {
+			_ = json.Unmarshal(data, &baseline) // best-effort load
+		} else {
+			log.Printf("⚠️  could not read baseline: %v", err)
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
@@ -73,11 +86,14 @@ func main() {
 			}
 
 			// Phase 3: Execution & collect
-			execpkg.ExecuteFuzz(conn, svcName, mdesc, muts, func(f reportpkg.Finding) {
+			execpkg.ExecuteFuzz(conn, svcName, mdesc, muts, *webMode, func(f reportpkg.Finding) {
 				findings = append(findings, f)
 			})
+
 		}
 	}
+
+	reportpkg.ApplyBaseline(findings, baseline)
 
 	// Phase 4: Reporting
 	if *reportJSON != "" {
