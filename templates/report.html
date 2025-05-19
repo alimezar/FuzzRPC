@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FuzzRPC Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px; }
+    .high { background: #fdd; }
+    .low { background: #dfd; }
+  </style>
+</head>
+<body>
+  <h1>FuzzRPC Findings</h1>
+
+  <h2>Error Counts per Method</h2>
+  <canvas id="errorChart" width="600" height="300"></canvas>
+
+  <h2>All Findings</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Service</th>
+        <th>Method</th>
+        <th>Payload</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{- range . }}
+      <tr class="{{ if .Error }}high{{ else }}low{{ end }}">
+        <td>{{ .Timestamp }}</td>
+        <td>{{ .Service }}</td>
+        <td>{{ .Method }}</td>
+        <td><pre>{{ .Payload }}</pre></td>
+        <td>{{ .Error }}</td>
+      </tr>
+    {{- end }}
+    </tbody>
+  </table>
+
+  <script>
+    // Injected JSON of findings via the toJSON template function
+    const findings = {{ . | toJSON }};
+    const counts = {};
+    findings.forEach(f => {
+      counts[f.method] = (counts[f.method] || 0) + (f.error ? 1 : 0);
+    });
+    new Chart(document.getElementById('errorChart'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{ label: 'Errors per Method', data: Object.values(counts) }]
+      }
+    });
+  </script>
+</body>
+</html>

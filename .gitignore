@@ -1,0 +1,15 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Go workspace file
+go.work
+go.work.sum
+
+# VS Code settings
+.vscode/
