@@ -1,4 +1,3 @@
-cat << 'EOF' > README.md
 # FuzzRPC
 
 **A native Go fuzzer for gRPC and gRPC-Web services.**  
@@ -157,4 +156,3 @@ Each stage lives in its own \`pkg/\` sub-module:
 ## License
 
 Distributed under the MIT License. See [\`LICENSE\`](./LICENSE) for details.
-EOF
